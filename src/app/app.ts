@@ -20,7 +20,6 @@ export default class App {
     this.initStats();
 
     this.initThreeEngine();
-    this.initGUI();
     this.addListeners();
     this.animate();
     this.resize();
@@ -29,10 +28,6 @@ export default class App {
   private initThreeEngine(): void {
     this.threeEngine = new ThreeEngine(this);
     this.el.appendChild(this.threeEngine.renderer.domElement);
-  }
-
-  private initGUI(): void {
-    this.gui = new GUIView(this);
   }
 
   private initStats(): void {

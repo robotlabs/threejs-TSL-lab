@@ -3,6 +3,7 @@ import * as WEBGPU from "three/webgpu";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import type App from "@/app/app";
 import { LightManager } from "./light-manager";
+import GUIView, { PlaneType } from "@/gui/guiView";
 
 import plane1VertexShader from "@/shaders/plane1.vertex.glsl";
 import plane1FragmentShader from "@/shaders/plane1.fragment.glsl";
@@ -14,6 +15,7 @@ import gsap from "gsap";
 import { TSLPlane } from "./TSLPlane";
 import { TSLPlaneSDF } from "./TSLPlaneSDF";
 import { TSLPlaneDesertTank } from "./TSLPlaneDesertTank";
+import { TSLPlaneRaymarching } from "./TSLPlaneRaymarching";
 
 export default class ThreeEngine {
   // Static variable to force renderer type
@@ -26,14 +28,18 @@ export default class ThreeEngine {
   private controls: OrbitControls;
   private cube: THREE.Mesh;
   private lights: LightManager;
+  private gui: GUIView;
 
   private shaderPlane: THREE.Mesh;
   private shaderMaterial: THREE.ShaderMaterial;
   private shaderMaterialSimple: THREE.ShaderMaterial;
 
-  private tslPlane: TSLPlane;
-  private tslPlaneSDF: TSLPlaneSDF;
-  private tslDesertTank: TSLPlaneDesertTank;
+  // TSL Planes - only one active at a time
+  private tslPlane: TSLPlane | null = null;
+  private tslPlaneSDF: TSLPlaneSDF | null = null;
+  private tslDesertTank: TSLPlaneDesertTank | null = null;
+  private raymarchPlane: TSLPlaneRaymarching | null = null;
+  private currentActivePlane: PlaneType = "none";
 
   constructor(app: App) {
     this.app = app;
@@ -47,8 +53,10 @@ export default class ThreeEngine {
     // this.initTestPlaneShader();
     // this.initSimpleShaderPlane();
     this.initControls();
+    this.initGUI();
 
-    this.initTSLPlane();
+    // Start with wave plane
+    this.switchToPlane("raymarching");
   }
 
   private initThree(): void {
@@ -171,12 +179,153 @@ export default class ThreeEngine {
     this.controls.enabled = true;
   }
 
+  private initGUI(): void {
+    console.log("xxxxxx this", this);
+    this.gui = new GUIView(this.app, this);
+  }
+
+  onPlaneChange(planeType: PlaneType) {
+    this.switchToPlane(planeType);
+  }
+
   private initGrid(): void {
     const helper = new THREE.GridHelper(5000, 20);
     helper.position.y = -100;
     helper.material.opacity = 0.8;
     helper.material.transparent = true;
     this.scene.add(helper);
+  }
+
+  private switchToPlane(planeType: PlaneType): void {
+    console.log(`🔄 Switching to plane: ${planeType}`);
+
+    // Clean up current plane
+    this.cleanupCurrentPlane();
+
+    // Create and add new plane
+    switch (planeType) {
+      case "wave":
+        this.createWavePlane();
+        break;
+      case "sdf":
+        this.createSDFPlane();
+        break;
+      case "desert-tank":
+        this.createDesertTankPlane();
+        break;
+      case "raymarching":
+        this.createRayMarchingPlane();
+        break;
+      case "none":
+        // Just cleanup, no new plane
+        break;
+      default:
+        console.warn(`Unknown plane type: ${planeType}`);
+        return;
+    }
+
+    this.currentActivePlane = planeType;
+    console.log(`✅ Successfully switched to: ${planeType}`);
+  }
+
+  private cleanupCurrentPlane(): void {
+    // Remove and dispose current planes
+    if (this.tslPlane) {
+      this.scene.remove(this.tslPlane.mesh);
+      this.tslPlane.dispose();
+      this.tslPlane = null;
+    }
+
+    if (this.tslPlaneSDF) {
+      this.scene.remove(this.tslPlaneSDF.mesh);
+      this.tslPlaneSDF.dispose();
+      this.tslPlaneSDF = null;
+    }
+
+    if (this.tslDesertTank) {
+      this.scene.remove(this.tslDesertTank.mesh);
+      this.tslDesertTank.dispose();
+      this.tslDesertTank = null;
+    }
+
+    if (this.raymarchPlane) {
+      this.scene.remove(this.raymarchPlane.mesh);
+      this.raymarchPlane.dispose();
+      this.raymarchPlane = null;
+    }
+  }
+
+  private createWavePlane(): void {
+    try {
+      this.tslPlane = new TSLPlane({
+        width: 8,
+        height: 8,
+        widthSegments: 128,
+        heightSegments: 128,
+        position: new THREE.Vector3(0, 0, 0),
+      });
+      this.scene.add(this.tslPlane.mesh);
+      console.log("✅ Wave plane created");
+    } catch (error) {
+      console.error("❌ Failed to create wave plane:", error);
+    }
+  }
+
+  private createSDFPlane(): void {
+    try {
+      this.tslPlaneSDF = new TSLPlaneSDF({
+        width: 8,
+        height: 4,
+        position: new THREE.Vector3(0, 0, 0),
+      });
+
+      // Configure SDF parameters
+      this.tslPlaneSDF.radius = 0.3;
+      this.tslPlaneSDF.fade = 2.0;
+
+      this.scene.add(this.tslPlaneSDF.mesh);
+      console.log("✅ SDF plane created");
+    } catch (error) {
+      console.error("❌ Failed to create SDF plane:", error);
+    }
+  }
+
+  private createDesertTankPlane(): void {
+    try {
+      this.tslDesertTank = new TSLPlaneDesertTank({
+        width: 4,
+        height: 3,
+        position: new THREE.Vector3(0, 0, 0),
+      });
+
+      this.scene.add(this.tslDesertTank.mesh);
+      console.log("✅ Desert tank plane created");
+    } catch (error) {
+      console.error("❌ Failed to create desert tank plane:", error);
+    }
+  }
+
+  private createRayMarchingPlane(): void {
+    // Create the raymarching plane
+    const raymarchPlane = new TSLPlaneRaymarching({
+      width: 8,
+      height: 8,
+      position: new THREE.Vector3(0, 0, 0),
+    });
+
+    // Add to scene
+    this.scene.add(raymarchPlane.mesh);
+
+    // Setup mouse interaction (important!)
+    raymarchPlane.setupMouseInteraction(this.camera, this.renderer.domElement);
+
+    // Control raymarching parameters
+    raymarchPlane.radius = 0.2;
+    raymarchPlane.maxSteps = 25;
+    raymarchPlane.surfaceDistance = 0.0001;
+    raymarchPlane.timeMultiplier = 0.5;
+
+    this.raymarchPlane = raymarchPlane;
   }
 
   private initTestObject(): void {
@@ -337,42 +486,6 @@ export default class ThreeEngine {
     this.scene.add(simpleShaderPlane);
   }
 
-  private initTSLPlane(): void {
-    this.tslPlane = new TSLPlane({
-      width: 8,
-      height: 8,
-      widthSegments: 128,
-      heightSegments: 128,
-      position: new THREE.Vector3(0, 0, 0), // Posizionalo a fianco agli altri
-    });
-
-    this.scene.add(this.tslPlane.mesh);
-
-    const sdfPlane = new TSLPlaneSDF({
-      width: 8,
-      height: 4,
-      position: new THREE.Vector3(0, 0, 2),
-    });
-
-    // Add to scene
-    this.tslPlaneSDF = sdfPlane;
-    this.scene.add(sdfPlane.mesh);
-
-    // Control the SDF parameters
-    sdfPlane.radius = 0.3;
-    sdfPlane.fade = 2.0;
-
-    const desertTank = new TSLPlaneDesertTank({
-      width: 4,
-      height: 3,
-      position: new THREE.Vector3(0, 0, 4),
-    });
-
-    // Add to scene
-    this.scene.add(desertTank.mesh);
-    this.tslDesertTank = desertTank;
-  }
-
   update(): void {
     if (this.controls) this.controls.update();
 
@@ -388,14 +501,32 @@ export default class ThreeEngine {
     if (this.shaderMaterialSimple) {
       this.shaderMaterialSimple.uniforms.uTime.value = performance.now() * 0.01;
     }
-    if (this.tslPlane) {
-      this.tslPlane.update(performance.now());
-    }
-    if (this.tslPlaneSDF) {
-      this.tslPlaneSDF.update(performance.now());
-    }
-    if (this.tslDesertTank) {
-      this.tslDesertTank.update(performance.now());
+
+    // Update only the currently active plane
+    const currentTime = performance.now() * 0.001; // Convert to seconds
+    const deltaTime = 1 / 60; // Approximate 60fps delta
+
+    switch (this.currentActivePlane) {
+      case "wave":
+        if (this.tslPlane) {
+          this.tslPlane.update(currentTime);
+        }
+        break;
+      case "sdf":
+        if (this.tslPlaneSDF) {
+          this.tslPlaneSDF.update(currentTime);
+        }
+        break;
+      case "desert-tank":
+        if (this.tslDesertTank) {
+          this.tslDesertTank.update(deltaTime);
+        }
+        break;
+      case "raymarching":
+        if (this.raymarchPlane) {
+          this.raymarchPlane.update(deltaTime);
+        }
+        break;
     }
   }
 
@@ -416,6 +547,13 @@ export default class ThreeEngine {
     }
     if (this.shaderMaterialSimple) {
       this.shaderMaterialSimple.uniforms.uResolution.value.set(vw, vh);
+    }
+  }
+
+  public dispose(): void {
+    this.cleanupCurrentPlane();
+    if (this.gui) {
+      this.gui.dispose();
     }
   }
 }
