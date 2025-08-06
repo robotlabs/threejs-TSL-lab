@@ -1,0 +1,26 @@
+{
+  "type": "module",
+  "scripts": {
+    "build": "npx vite build",
+    "serve": "npx vite"
+  },
+  "devDependencies": {
+    "@types/three": "^0.179.0",
+    "@webgpu/types": "^0.1.51",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3",
+    "vite-plugin-glsl": "^1.5.1"
+  },
+  "dependencies": {
+    "@gltf-transform/core": "^4.1.4",
+    "async-preloader": "^8.0.4",
+    "gl-matrix": "^3.4.3",
+    "gsap": "^3.12.7",
+    "stats.js": "^0.17.0",
+    "three": "^0.179.1",
+    "tweakpane": "^4.0.5",
+    "vite-tsconfig-paths": "^5.1.4",
+    "wgpu-matrix": "^3.3.0"
+  },
+  "packageManager": "yarn@3.6.4+sha512.e70835d4d6d62c07be76b3c1529cb640c7443f0fe434ef4b6478a5a399218cbaf1511b396b3c56eb03bc86424cff2320f6167ad2fde273aa0df6e60b7754029f"
+}

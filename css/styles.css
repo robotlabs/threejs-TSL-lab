@@ -1,0 +1,18 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  overflow: hidden;
+  background: #e6cc80;
+}
+
+#app {
+  display: block; /* canvases default to inline–replace that */
+  width: 100vw; /* full viewport width */
+  height: 100vh; /* full viewport height */
+}

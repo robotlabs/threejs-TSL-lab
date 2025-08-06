@@ -1,0 +1,12 @@
+{
+  "version": "1.0.0",
+  "debug": true,
+  "camera": {
+    "fov": 75,
+    "near": 0.1,
+    "far": 1000
+  },
+  "scene": {
+    "background": "#000000"
+  }
+}

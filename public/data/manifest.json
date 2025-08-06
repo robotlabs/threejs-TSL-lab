@@ -1,0 +1,15 @@
+{
+  "items": [
+    {
+      "id": "test-image-local",
+      "type": "image",
+      "url": "/images/test-image.jpg"
+    },
+
+    {
+      "id": "config",
+      "type": "json",
+      "url": "/data/config.json"
+    }
+  ]
+}
